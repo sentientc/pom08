@@ -17,7 +17,9 @@
 	+ netcdf library version at least 4.1.2  
 
 # History #
-
+* hosting source code for pom08 per request from Leo Oey 
+* the followings are concatenated from pomchanges and moreREADME from http://shoni2.princeton.edu/ftp/glm/
+* see the pom08.f source for more comments
 As of Feb. 28, 2008, I have made changes based on symetry
 analysis. Thus, for a straight channel with jm=11, properties
 should be symmetrical about j=6. They are now to 3 or 4
