@@ -17,9 +17,11 @@
 	+ netcdf library version at least 4.1.2  
 
 # History #
+* cite this model with Mellor, G.L., M.A. Donelan, and L. Oey, 2008: A Surface Wave Model for Coupling with Numerical Ocean Circulation Models. J. Atmos. Oceanic Technol., 25, 1785–1807, https://doi.org/10.1175/2008JTECHO573.1 http://journals.ametsoc.org/doi/abs/10.1175/2008JTECHO573.1
 * hosting source code for pom08 per request from Leo Oey 
 * the followings are concatenated from pomchanges and moreREADME from http://shoni2.princeton.edu/ftp/glm/
-* see the pom08.f source for more comments
+* see the pom08.f source for more comments   
+
 As of Feb. 28, 2008, I have made changes based on symetry
 analysis. Thus, for a straight channel with jm=11, properties
 should be symmetrical about j=6. They are now to 3 or 4
