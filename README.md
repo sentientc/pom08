@@ -6,21 +6,24 @@
 		+ enable compiler option in run.sh   
 	2. netcdf library  
 		+ make sure there is netcdf library installed in the system  
-		+ modify the include path for netcdf include accordingly. usually in /usr/include/netcdf.inc  
-                + netcdf library is best to be compiled in the fortran used  
+		+ modify the include path in pom08_iosub.f for netcdf include accordingly. usually in /usr/include/netcdf.inc  
+                + netcdf library is best to be compiled in the fortran variant used   
+
 * Run the program with run.sh
 	1. run the model with run script(execute run.sh)
-	2. after execution, 3 files are generated. pom08(the executable), out/pom08.nc(netcdf output), and out/pom08.log(model output messages)
-	3. results are in the out folder pom08.nc and pom08.log
+	2. after successful execution, 3 files will be generated. pom08.x(the executable), out/pom08.nc(netcdf output), and out/pom08.log(model output messages)
+	3. results will be in the out folder pom08.nc and pom08.log  
 
 * Dependencies  
-	+ netcdf library version at least 4.1.2  
+	+ netcdf library version at least 4.1.2   
+
+* cite this model with Mellor, G.L., M.A. Donelan, and L. Oey, 2008: A Surface Wave Model for Coupling with Numerical Ocean Circulation Models. J. Atmos. Oceanic Technol., 25, 1785-1807, https://doi.org/10.1175/2008JTECHO573.1
+* hosting source code for pom08 per request from Leo Oey 
+* see the pom08.f source for more comments   
 
 # History #
-* cite this model with Mellor, G.L., M.A. Donelan, and L. Oey, 2008: A Surface Wave Model for Coupling with Numerical Ocean Circulation Models. J. Atmos. Oceanic Technol., 25, 1785–1807, https://doi.org/10.1175/2008JTECHO573.1 http://journals.ametsoc.org/doi/abs/10.1175/2008JTECHO573.1
-* hosting source code for pom08 per request from Leo Oey 
+
 * the followings are concatenated from pomchanges and moreREADME from http://shoni2.princeton.edu/ftp/glm/
-* see the pom08.f source for more comments   
 
 As of Feb. 28, 2008, I have made changes based on symetry
 analysis. Thus, for a straight channel with jm=11, properties
