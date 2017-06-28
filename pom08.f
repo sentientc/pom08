@@ -202,8 +202,9 @@ C
 C
 C-----------------------------------------------------------------------
 C
-C     netcdf_file='pom2k.nc'  ! netCDF output file
-      netcdf_file='nonetcdf'  ! disable netCDF output
+!lyo:
+      netcdf_file='out/pom08.nc'  ! netCDF output file
+c      netcdf_file='nonetcdf'  ! disable netCDF output
 C
 C-----------------------------------------------------------------------
 C  N.B. With this version, code associated with each iproblem is stored
@@ -316,7 +317,8 @@ C
 C
 C-----------------------------------------------------------------------
 C
-       days=1.0001      ! run duration in days
+c       days=1.0001      ! run duration in days
+       days=10.0001      ! run duration in days
 C
 C-----------------------------------------------------------------------
 C
@@ -693,7 +695,8 @@ C     call prxy('y-grid increment, dy', time,dy ,im,iskp,jm,jskp,0.e0)
 C
 C     Inertial period for temporal filter:
 C
-      period=(2.e0*pi)/abs(cor(im/2,jm/2))/86400.e0
+c!sc:debug:cor is 0 this will create problem and variable period is not used anywhere esle
+c      period=(2.e0*pi)/abs(cor(im/2,jm/2))/86400.e0
 C
 C     Initialise time:
 C
@@ -876,14 +879,22 @@ C     Select print statements in printall as desired:
 C
 c     call printall
 C
+
+c!sc:debug as 0 wubot and wvbot will give nan cbc
+c      do j=1,jm
+c        do i=1,im
+c          wubot(i,j)=0.0001
+c          wvbot(i,j)=0.0001
+c        end do
+c      end do
                          endif !*****************************************
 C-----------------------------------------------------------------------
 C
 C     Initialise netCDF output and output initial set of data:
 C
         if(netcdf_file.ne.'nonetcdf') then
-c     call write_netcdf(netcdf_file,1)                        ! *netCDF*
-c     call write_netcdf(netcdf_file,2)                        ! *netCDF*
+      call write_netcdf(netcdf_file,1)                        ! *netCDF*
+      call write_netcdf(netcdf_file,2)                        ! *netCDF*
         endif
 C
       timeb=time
@@ -1556,7 +1567,7 @@ C
 C     Write netCDF output:
 C
             if(netcdf_file.ne.'nonetcdf') then
-c         call write_netcdf(netcdf_file,2)                    ! *netCDF*
+          call write_netcdf(netcdf_file,2)                    ! *netCDF*
             endif
 C
           if(vamax.gt.vmax) then
@@ -1575,7 +1586,7 @@ C
 C     Close netCDF file:
 C
               if(netcdf_file.ne.'nonetcdf') then
-c           call write_netcdf(netcdf_file,3)                  ! *netCDF*
+            call write_netcdf(netcdf_file,3)                  ! *netCDF*
               endif
 C
             stop
@@ -1611,7 +1622,9 @@ C
 C     Close netCDF file:
 C
         if(netcdf_file.ne.'nonetcdf') then
-c     call write_netcdf(netcdf_file,3)                        ! *netCDF*
+      write(*,*) 'xx'
+      call write_netcdf(netcdf_file,3)                        ! *netCDF*
+      write(*,*) 'xx1'
         endif
 C
       stop
@@ -5138,7 +5151,8 @@ C
       write(6,1) label
     1 format(1x,a40/)
       write(6,2) time,scale
-    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe8.2)
+c    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe8.2)
+    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe12.2)
 C
       do ib=1,im,cols*iskp
 C
@@ -5236,7 +5250,8 @@ C
       write(6,1) label
     1 format(1x,a40/)
       write(6,2) time,scale
-    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe8.2)
+c    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe8.2)
+    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe12.2)
 C
       do iko=1,3
 C
@@ -5342,7 +5357,8 @@ C
       write(6,1) label
     1 format(1x,a40/)
       write(6,2) time,scale
-    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe8.2)
+c    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe8.2)
+    2 format(' Time = ',f9.4,' days    multiply all values by ',1pe12.2)
 C
       do ijo=1,3   
 C
@@ -5449,7 +5465,8 @@ C
       write(6,1) label
     1 format(1x,a40/)
       write(6,2) time,scale
-    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe8.2)
+c    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe8.2)
+    2 format(' Time = ',f9.4,' days   multiply all values by ',1pe12.2)
 C
       do iio=1,3  
 C
@@ -5753,7 +5770,10 @@ C
       end
 C
 !----------------------------------------------------------------------!
-C     include 'pom2k.n'                                       ! *netCDF*
+!      include 'pom08.n'                                       ! *netCDF*
+c!sc:modified netcdf subroutine for wave variables:start
+      include 'pom08_iosub.f'                                       ! *netCDF*
+c!sc:modified netcdf subroutine for wave variables:end
 C----------------------------------------------------------------------
 C
 C     End of circulation source code
@@ -6507,17 +6527,24 @@ C--------------------------------------------------------------
       do j=1,jm
         do i=1,im
           if (fsm(i,j).eq.1.) then
+c!sc:fsinhinv(kp(i,j)*d(i,j)) was 0
             uboscil=cp(i,j)*kp(i,j)*sqrt(2.*ent(i,j)/grav)
-     &               /fsinhinv(kp(i,j)*d(i,j))
-            utau2=sqrt(wubot(i,j)**2+wvbot(i,j)**2)
+     &               /(fsinhinv(kp(i,j)*d(i,j))+1.e-12)
+c!sc:prevent utau2 become 0
+            utau2=sqrt(wubot(i,j)**2+wvbot(i,j)**2+1.e-12)
+c            utau2=sqrt(wubot(i,j)**2+wvbot(i,j)**2)
             z0a=z0b*(1.+0.05*uboscil**2/utau2)
-            cbc(i,j)=(kappa/log(1.+(1.0+zzkbm1)*d(i,j)/z0a))**2
+            cbc(i,j)=(kappa/(log(1.+(1.0+zzkbm1)*d(i,j)/z0a)+1.e-12))**2
             cbc(i,j)=max(cbcmin,cbc(i,j))
 C
 C     If the following is invoked, then it is probable that the wrong
 C     choice of z0b or vertical spacing has been made:
 C
             cbc(i,j)=min(cbcmax,cbc(i,j))
+C!sc:alternative cbc setting
+c!sc:          if ((wubot(i,j).le.1.e-12).and.(wvbot(i,j).le.1.e-12))then
+c!sc:            cbc(i,j)=cbcmin
+c!sc:          endif
           endif
         enddo
       enddo
@@ -6970,7 +6997,8 @@ C        if(iint.eq.3.and.nwave.eq.2) stop
                                      ! tranfer after multiplication
                                      ! by (tpx0,tpy0) after do 9000
 C Calculate Stokes drift
-          us(i,j,k)=ent(i,j)*kthav(i,j)/(sigthav(i,j)*dt(i,j))
+c!sc:denominator term have to changce to be 0 so 1.e-12 is added
+          us(i,j,k)=ent(i,j)*kthav(i,j)/(sigthav(i,j)*dt(i,j)+1.e-12)
      &        *(F4(k)-F4(k+1))/dz(k)
           ust(i,j,k)=us(i,j,k)*cos(thtav(i,j))
           vst(i,j,k)=us(i,j,k)*sin(thtav(i,j))
