@@ -198,7 +198,7 @@ C     NOTE that the array sizes im, jm and kb should be set in pom2k.c
 C
 C-----------------------------------------------------------------------
 C
-      title='MMS Western Atlantic                    ' ! run's title
+      title='Seamount problem                        ' ! run's title
 C
 C-----------------------------------------------------------------------
 C
@@ -6223,7 +6223,8 @@ C           fb=min(fb,1.0)     ! necessary ?
             qdis(i,j)=exp((qdis(i,j)-1)/fb)
 C
             do m=2,mm-1
-C Create neg. "tail" to oppose swell. Const. 0.4 from Donelan 1999
+C Create neg. "tail" to oppose wave travelling opposit to wind. 
+C Const. 0.4 from Donelan 1999.
               tht_ops=tht_wnd(i,j)+pi
               tpsw(i,j,m)=fsprm(beta,m,mm,tht_wnd(i,j),thetam(m))
      &             -0.4*fsprm(beta,m,mm,tht_ops     ,thetam(m))
@@ -6234,15 +6235,13 @@ C Reduced swfct*bdis is used for swell portion.
               bb=bdis                       
               if(abs(swin(i,j,m)).lt.1.e-6) bb=swfct*bdis  
               sdis(i,j,m)=adis*swin(i,j,m)+bb*sigth(i,j,m)*en(i,j,m)
-C  sdis is incorporated into the following semi-implicitly.
-              enf(i,j,m)=(enf(i,j,m)
-     &         +(1.-adis)*swin(i,j,m)*dtw2)/(1.+bb*sigthb(i,j,m) *dtw2)
-
+              enf(i,j,m)=enf(i,j,m)+(swin(i,j,m)-sdis(i,j,m))*dtw2
 C Bottom dissipation, first due to friction, second to depth-
 C induced breaking a la Battjes and Janssen 1978.
              bdis1(i,j,m)=.003*(sigthb(i,j,m)
      &             *sqrt(2.*enb(i,j,m)/grav)*fsinhinv(kthD(i,j,m)))**3
              bdis2(i,j,m)=(en(i,j,m)/ent(i,j))*grav*sigth(i,j,m)
+ 
      &                /(8.*pi)*qdis(i,j)*(Hm(i,j))**2
              enf(i,j,m)=enf(i,j,m)-(bdis1(i,j,m)+bdis2(i,j,m))*dtw2
              enf(i,j,m)=max(.0001,enf(i,j,m))*fsm(i,j)
@@ -6276,17 +6275,16 @@ C  calculations by adding code which would bypass using u and v.
       endif
 C  Include interactive radiation stress/current terms
        call cur2wave(im,jm,kb,dx,dy,fsm,z,dz,u,v,kthavD, 
-     &       Sradx,Sradxy,Srady,Srad,Srad0,ud,vd,iint)
+     &       Sradx,Sradxy,Srady,Srad,ud,vd,iint)
       do i=3,im-2
         do j=3,jm-2
           do m=2,mm-1
-C Eq.(14) has D instead of kthD 
+C Eq.(14) has D instead of kth*D 
             sorc= kth(i,j,m)*dt(i,j)*en(i,j,m)
      &          * (  csm(m)*csm(m)*Sradx(i,j)
      &              +csm(m)*snm(m)*Sradxy(i,j)
      &              +snm(m)*snm(m)*Srady(i,j) 
      &              +              Srad(i,j)  )
-     &              +en(i,j,m)*Srad0(i,j)
             sorc=sorc*fsm(i-1,j)*fsm(i+1,j)*fsm(i,j-1)*fsm(i,j+1)
             enf(i,j,m)=enf(i,j,m)-sorc*dtw2
           enddo
@@ -6528,7 +6526,7 @@ C
 
 C--------------------------------------------------------------------
       subroutine cur2wave(im,jm,kb,dx,dy,fsm,z,dz,u,v,kthavD,
-     &      Sradx,Sradxy,Srady,Srad,Srad0,ud,vd,iint)
+     &      Sradx,Sradxy,Srady,Srad,ud,vd,iint)
 C--------------------------------------------------------------------
 C                  Current to wave interaction terms
 C     Calculates vertical averages using spectrally averaged functions
@@ -6582,8 +6580,6 @@ C
             tp2(k)=0.5*(F2(k)+F2(k+1))*gradyv(k)*dz(k)
           enddo
           Srad(i,j)=-(sumk(tp1,1.,kb)+sumk(tp2,1.,kb))
-          Srad0(i,j)=0.5*(gradxu(1)+gradyv(1)) !this term is missing
-                                               ! in Eq.(14)
         enddo
       enddo
       do j=1,jm
@@ -6967,9 +6963,9 @@ C        if(iint.eq.3.and.nwave.eq.2) stop
           do k=1,kb-1
             F1m(k)=0.5*(F1(k)+F1(k+1))
             F2m(k)=0.5*(F2(k)+F2(k+1))
-            Sxx(i,j,k)=stpxx*F1m(k)-stp*F2m(k)
+            Sxx(i,j,k)=stpxx*F1m(k)+stp*F2m(k)
             Sxy(i,j,k)=stpxy*F1m(k)
-            Syy(i,j,k)=stpyy*F1m(k)-stp*F2m(k)
+            Syy(i,j,k)=stpyy*F1m(k)+stp*F2m(k)
             tpzdist(i,j,k)=F4(k)     ! subsurface momentum
                                      ! tranfer after multiplication
                                      ! by (tpx0,tpy0) after do 9000
@@ -6980,9 +6976,6 @@ C Calculate Stokes drift
           vst(i,j,k)=us(i,j,k)*sin(thtav(i,j))
           enddo
 
-C Add surface singular term
-          Sxx(i,j,1)=Sxx(i,j,1)+0.5*ent(i,j)/(dz(1)*dt(i,j))
-          Syy(i,j,1)=Syy(i,j,1)+0.5*ent(i,j)/(dz(1)*dt(i,j))
 c         if(i.eq.7.and.j.eq.6.and.iint.eq.180) then
 c           do k=1,kb
 c           write(6,'(''wave2'',i5,4e12.3)')k,kthav(i,j),kthavD(i,j),
