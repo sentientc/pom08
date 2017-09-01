@@ -155,9 +155,9 @@ C
 C     Filename of netCDF "include" file:
 C
 C      include '/usr/local/include/netcdf.inc'  !GFDL:
-      include '/usr/include/netcdf.inc'        !Princeton U:!sc: usable
+c      include '/usr/include/netcdf.inc'        !Princeton U:!sc: usable
 c      in most linux installation with gfortran or g77 installed
-c      include '/aracbox/lib/netcdf/4.1.2/intel_12/include/netcdf.inc'        !sc:netcdf.inc on ATOP cluster 
+      include '/aracbox/lib/netcdf/4.1.2/intel_12/include/netcdf.inc'        !sc:netcdf.inc on ATOP cluster 
 C
       integer option
 C
@@ -837,6 +837,196 @@ C
 C
       end
 C
+!_______________________________________________________________________
+      subroutine read_grid
+      implicit none
+      include 'pom08.c'
+      include '/aracbox/lib/netcdf/4.1.2/intel_12/include/netcdf.inc'        !sc:netcdf.inc on ATOP cluster 
+      character*120 netcdf_grid_file 
+      integer z_varid,zz_varid,dx_varid,dy_varid,east_c_varid,
+     $        east_e_varid,east_u_varid,east_v_varid,north_c_varid,
+     $        north_e_varid,north_u_varid,north_v_varid,rot_varid,
+     $        h_varid,fsm_varid,dum_varid,dvm_varid
+      integer ncid,status
+      integer vdims(2)
+      integer start(2),edge(2)
+! open netcdf file
+      write(netcdf_grid_file,'(a)') "in/grid/grid.nc"
+      status=nf_open(netcdf_grid_file,nf_nowrite,ncid)
+      call handle_netcdf_error('nf_open: '//netcdf_grid_file,
+     $                          status,nf_noerr)
+! get variables
+      status=nf_inq_varid(ncid,'z',z_varid)
+      call handle_netcdf_error('nf_inq_varid: z     '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'zz',zz_varid)
+      call handle_netcdf_error('nf_inq_varid: zz    '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'dx',dx_varid)
+      call handle_netcdf_error('nf_inq_varid: dx    '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'dy',dy_varid)
+      call handle_netcdf_error('nf_inq_varid: dy    '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'east_u',east_u_varid)
+      call handle_netcdf_error('nf_inq_varid: east_u'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'east_v',east_v_varid)
+      call handle_netcdf_error('nf_inq_varid: east_v'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'east_e',east_e_varid)
+      call handle_netcdf_error('nf_inq_varid: east_e'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'east_c',east_c_varid)
+      call handle_netcdf_error('nf_inq_varid: east_c'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'north_u',north_u_varid)
+      call handle_netcdf_error('nf_inq_varid:north_u'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'north_v',north_v_varid)
+      call handle_netcdf_error('nf_inq_varid:north_v'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'north_e',north_e_varid)
+      call handle_netcdf_error('nf_inq_varid:north_e'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'north_c',north_c_varid)
+      call handle_netcdf_error('nf_inq_varid:north_c'
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'rot',rot_varid)
+      call handle_netcdf_error('nf_inq_varid: rot   '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'h',h_varid)
+      call handle_netcdf_error('nf_inq_varid: h     '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'fsm',fsm_varid)
+      call handle_netcdf_error('nf_inq_varid: fsm   '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'dum',dum_varid)
+      call handle_netcdf_error('nf_inq_varid: dum   '
+     $                          ,status,nf_noerr)
+      status=nf_inq_varid(ncid,'dvm',dvm_varid)
+      call handle_netcdf_error('nf_inq_varid: dvm   '
+     $                          ,status,nf_noerr)
+! get data
+      start(1)=1
+      edge(1)=kb
+      status=nf_get_vara_real(ncid,z_varid,start,edge,z)
+      call handle_netcdf_error('nf_get_vara_real    ',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,zz_varid,start,edge,zz)
+      call handle_netcdf_error('nf_get_vara_real    ',
+     $                          status,nf_noerr)
+      start(1)=1
+      start(2)=1
+      edge(1)=im
+      edge(2)=jm
+      status=nf_get_vara_real(ncid,dx_varid,start,edge,dx)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,dy_varid,start,edge,dy)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,east_u_varid,start,edge,
+     $                               east_u)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,east_v_varid,start,edge,
+     $                               east_v)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,east_e_varid,start,edge,
+     $                               east_e)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,east_c_varid,start,edge,
+     $                               east_c)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,north_u_varid,start,edge,
+     $                               north_u)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,north_v_varid,start,edge,
+     $                               north_v)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,north_e_varid,start,edge,
+     $                               north_e)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,north_c_varid,start,edge,
+     $                               north_c)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,rot_varid,start,edge,rot)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,h_varid,start,edge,h)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,fsm_varid,start,edge,fsm)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,dum_varid,start,edge,dum)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+      status=nf_get_vara_real(ncid,dvm_varid,start,edge,dvm)
+      call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+! close file:
+      status=nf_close(ncid)
+      call handle_netcdf_error('nf_close: grid      ',status,nf_noerr)
+      return
+      end
+!_______________________________________________________________________
+      subroutine read_wind(wfile,ti,wu,wv)
+      implicit none
+      include 'pom08.c'
+      include '/aracbox/lib/netcdf/4.1.2/intel_12/include/netcdf.inc'        !sc:netcdf.inc on ATOP cluster 
+      character*16 wfile 
+      integer wu_varid,wv_varid
+      integer ncid,status
+      integer vdims(3)
+      integer start(3),edge(3)
+      integer :: ti
+      real :: wu(im,jm),wv(im,jm)
+      logical :: lexist
+      inquire(file='in/'//trim(wfile),
+     $  exist=lexist)
+! open netcdf file
+      if (lexist)then
+       status=nf_open('in/'//trim(wfile),nf_nowrite,ncid)
+       call handle_netcdf_error('open'//wfile,
+     $                          status,nf_noerr)
+! get variables
+       status=nf_inq_varid(ncid,'uwsrf',wu_varid)
+       call handle_netcdf_error('nf_inq_varid: uwsrf '
+     $                          ,status,nf_noerr)
+       status=nf_inq_varid(ncid,'vwsurf',wv_varid)
+       call handle_netcdf_error('nf_inq_varid: vwsrf '
+     $                          ,status,nf_noerr)
+! get data
+       start(1)=1
+       start(2)=1
+       start(3)=ti
+       edge(1)=im
+       edge(2)=jm
+       edge(3)=1
+       status=nf_get_vara_real(ncid,wu_varid,start,edge,
+     $                               wu)
+       call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+       status=nf_get_vara_real(ncid,wv_varid,start,edge,
+     $                               wv)
+       call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+! close file:
+       status=nf_close(ncid)
+       call handle_netcdf_error('nf_close: grid      ',status,nf_noerr)
+      endif
+      return
+      end
+!_______________________________________________________________________
 C     End of source code
 C
 C-----------------------------------------------------------------------

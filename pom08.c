@@ -18,14 +18,7 @@ C     Set size of problem here:
 C
 C
       parameter
-C -- seamount      (iproblem=1)
-     $ (im=24        ,jm=11            ,kb=21)
-c -- file2ic (iproblem=3)
-C    $ (im=41          ,jm=61          ,kb=16)
-C -- nybight  (iproblem=4)
-C    $ (im=40          ,jm=40          ,kb=21)
-c    $ (im=200         ,jm=200         ,kb=21)
-c    $ (im=401        ,jm=251          ,kb=25) 
+     $ (im=650        ,jm=452            ,kb=21)
 
 C    wave parameter mm = Number of angle segment + 2
       parameter (mm=24+2)
@@ -169,7 +162,7 @@ C-----------------------------------------------------------------------
 C
 C     Character variables:
 C
-      character*26
+      character*19
      $  time_start
 C
       character*40

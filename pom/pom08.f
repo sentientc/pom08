@@ -159,6 +159,8 @@ C *                59 Temple Place - Suite 330, Boston, MA 02111, USA. *
 C *                                                                    *
 C **********************************************************************
 C
+      use module_time
+
       implicit none
 C
       include 'pom08.c'
@@ -181,6 +183,7 @@ C
       integer narr,itime1,idtwind
       logical lramp
       character*120 netcdf_file
+      type(date) ::  mtime
       dimension u10xb(im,jm),u10yb(im,jm),u10xf(im,jm),u10yf(im,jm)
       dimension narr(im,jm)
 C
@@ -198,7 +201,6 @@ C     NOTE that the array sizes im, jm and kb should be set in pom2k.c
 C
 C-----------------------------------------------------------------------
 C
-      title='Seamount problem                        ' ! run's title
 C
 C-----------------------------------------------------------------------
 C
@@ -225,7 +227,12 @@ C         4        nybight          Topography from model_grid
 C
 C         5        gom              Gulf of Mexico
 C
-      iproblem=6         !  remember to change im,jm in pom08.c
+      iproblem = 1
+      if(iproblem.eq.1) then
+       title='Seamount problem                        ' ! run's title
+      else if(iproblem.eq.6) then
+       title='PAC11                                   ' ! run's title
+      endif 
 C
 C-----------------------------------------------------------------------
 C
@@ -313,16 +320,17 @@ C     axis (i.e. beginning of year zero, which does not exist in the
 C     real-world calendar) has been used here. Insert your own date
 C     and time as required:
 C
-      time_start='2000-01-01 00:00:00 +00:00'      ! optional
+c      time_start='2000-01-01 00:00:00 +00:00'      ! optional
+      time_start = '2000-01-01 00:00:00'      ! optional
 C
 C-----------------------------------------------------------------------
 C
 c       days=1.0001      ! run duration in days
-       days=10.0001      ! run duration in days
+      days = 10.0001      ! run duration in days
 C
 C-----------------------------------------------------------------------
 C
-       prtd1=1.00      !  Initial print interval (days)
+      prtd1=1.00      !  Initial print interval (days)
 C
 C-----------------------------------------------------------------------
 C
@@ -586,7 +594,7 @@ C-----------------------------------------------------------------------
 C
 C     Set up sigma layers:
 C
-      if(iproblem.ne.3) call depth
+c      if(iproblem.ne.3) call depth
 C
 C-----------------------------------------------------------------------
 C
@@ -655,8 +663,8 @@ C
           do i=1,im
             ub(i,j,k)=0.e0
             vb(i,j,k)=0.e0
-	    advx(i,j,k)=0.
-	    advy(i,j,k)=0.
+            advx(i,j,k)=0.
+            advy(i,j,k)=0.
             Sxx(i,j,k)=0.             !WAVE radiation stress
             Sxy(i,j,k)=0.
             Syy(i,j,k)=0.
@@ -667,34 +675,37 @@ C
 C     Read in grid data, and initial and lateral boundary conditions:
 C
       if(iproblem.eq.1) then
+        call depth
         call seamount           
-c     else if(iproblem.eq.2) then
+      else if(iproblem.eq.2) then
+        call depth
 c       call box
-c     else if(iproblem.eq.3) then
+      else if(iproblem.eq.3) then
 c       call file2ic
       else if(iproblem.eq.4) then
+        call depth
 c       call nybight
       else if(iproblem.eq.5) then
+        call depth
 c       call gfdex_nwatl  !lyo:_20090408:glm:call this grid setup routine
       else if(iproblem.eq.6) then
-       call gridgen
+        call gridgen
       else
-        write(6,8)
-    8   format(/' Invalid value of iproblem ..... program terminated'/)
-        stop
+       write(6,8)
+    8  format(/' Invalid value of iproblem ..... program terminated'/)
+       stop
       endif
       write(6,'('' cor(im/2,jm/2) ='',e9.2)') cor(im/2,jm/2)
       write(6,'('' hmax  = '',f10.2)') hmax       
-      call depth
-      call prxy(' h                  ', time,h  ,im,iskp,jm,jskp,1.e0)
-      call prxy('fsm  ', time,fsm ,im,iskp,jm,jskp,0.e0)
-      call prxy('dum  ', time,dum ,im,iskp,jm,jskp,0.e0)
-      call prxy('dvm  ', time,dvm ,im,iskp,jm,jskp,0.e0)
-C     call prxy('lat     ', time,lat ,im,iskp,jm,jskp,0.e0)
-C     call prxy('long    ', time,long,im,iskp,jm,jskp,0.e0)
-C     call prxy('x-grid increment, dx', time,dx ,im,iskp,jm,jskp,0.e0)
-C     call prxy('y-grid increment, dy', time,dy ,im,iskp,jm,jskp,0.e0)
-C
+c      call prxy(' h                  ', time,h  ,im,iskp,jm,jskp,1.e0)
+c      call prxy('fsm  ', time,fsm ,im,iskp,jm,jskp,1.e0)
+c      call prxy('dum  ', time,dum ,im,iskp,jm,jskp,1.e0)
+c      call prxy('dvm  ', time,dvm ,im,iskp,jm,jskp,1.e0)
+c      call prxy('lat     ', time,lat ,im,iskp,jm,jskp,1.e0)
+c      call prxy('long    ', time,long,im,iskp,jm,jskp,1.e0)
+c      call prxy('x-grid increment, dx', time,dx ,im,iskp,jm,jskp,1.e-2)
+c      call prxy('y-grid increment, dy', time,dy ,im,iskp,jm,jskp,1.e-2)
+
 C     Inertial period for temporal filter:
 C
 c!sc:debug:cor is 0 this will create problem and variable period is not used anywhere esle
@@ -715,9 +726,9 @@ C
       do i=1,im
         do j=1,jm
           ua(i,j)=uab(i,j)
-	  uaf(i,j)=ua(i,j)
+          uaf(i,j)=ua(i,j)
           va(i,j)=vab(i,j)
-	  vaf(i,j)=va(i,j)
+          vaf(i,j)=va(i,j)
           el(i,j)=elb(i,j)
           et(i,j)=etb(i,j)
           etf(i,j)=et(i,j)
@@ -726,7 +737,7 @@ C
           w(i,j,1)=vfluxf(i,j)
         end do
       end do
-                 if(mode.gt.0) then  !*********************************
+      if(mode.gt.0) then  !*********************************
 C
       do k=1,kb
         do j=1,jm
@@ -895,8 +906,8 @@ C
 C     Initialise netCDF output and output initial set of data:
 C
         if(netcdf_file.ne.'nonetcdf') then
-      call write_netcdf(netcdf_file,1)                        ! *netCDF*
-      call write_netcdf(netcdf_file,2)                        ! *netCDF*
+         call write_netcdf(netcdf_file,1)                        ! *netCDF*
+         call write_netcdf(netcdf_file,2)                        ! *netCDF*
         endif
 C
       timeb=time
@@ -906,9 +917,9 @@ c     iend=6
 c     iprint=3
 C---------------- BEGIN INTERNAL (3-D) MODE ----------------------------
       do 9000 iint=1,iend     
-      time=time+dti/86400.               
+         time=time+dti/86400.               
 C-----------------------------------------------------------------------
-          write(6,'(''time,iint='',f8.3,3i5)') time,iint,iext,iprint
+         write(6,'(''time,iint='',f8.3,3i5)') time,iint,iext,iprint
 C-----------------------------------------------------------------------
 C
 
@@ -917,7 +928,7 @@ C       if(lramp) then
 C         ramp=time/period
 C         if(ramp.gt.1.e0) ramp=1.e0
 C       else
-          ramp=1.e0
+         ramp=1.e0
 C       endif
 C
 C-----------------------------------------------------------------------
@@ -936,16 +947,20 @@ C     10621-10631). To make a well resolved surface Eman layer,
 C     a value, kl1=7 to 9, is recommended.
 C
 C
-        do j=2,jm-1      
-          do i=1,im
-            u10x(i,j)= 10.
+c         if(iproblem.eq.6) then
+c          mtime=str2date(time_start)+time*86400
+c          call get_wind(mtime)
+c         else
+c         endif
+         do j=2,jm-1      
+           do i=1,im
+             u10x(i,j)= 10.
 c    &           *0.25*(dvm(i,j+1)+dvm(i-1,j+1)
 c    &                 +dvm(i-1,j)+dvm(i,j))
-            u10y(i,j)=0.
-            u10(i,j)=sqrt(u10x(i,j)**2+u10y(i,j)**2)
-          enddo
-        enddo         
-
+             u10y(i,j)=0.
+             u10(i,j)=sqrt(u10x(i,j)**2+u10y(i,j)**2)
+           enddo
+         enddo         
 C
 C--------------------------------------------------------------------
 C     When modew=1, then subroutine wave and supporting subroutines 
@@ -1624,9 +1639,7 @@ C
 C     Close netCDF file:
 C
         if(netcdf_file.ne.'nonetcdf') then
-      write(*,*) 'xx'
-      call write_netcdf(netcdf_file,3)                        ! *netCDF*
-      write(*,*) 'xx1'
+         call write_netcdf(netcdf_file,3)                        ! *netCDF*
         endif
 C
       stop
@@ -6645,6 +6658,7 @@ C       N.B. This subroutine uses the file, specavs.
       integer me,ne
       parameter (me=17,ne=21)
       integer i,j,k,m,n,kb,init,iint
+      integer m1,n1
       real kpD,kpDd(me)
       real F1d(me,ne),F2d(me,ne),F3d(me,ne),F4d(me,ne) 
       real F1i(ne),F2i(ne),F3i(ne),F4i(ne)
