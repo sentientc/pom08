@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 #rundir=`pwd`
-scnm='e2'
+scnm='e0'
 wrkdir='/wrk/simon/fortran/pom2k/latest/pom08'
 rundir='/archive7/simon/pom_wave/pac11/'$scnm
 gridf='/archive5/simon/gridf/pac11/out.30km/grid'
@@ -28,6 +28,9 @@ elif [[ $scnm == *e2 ]]; then
  sed -i s/'      iproblem = '.*/'      iproblem = '6/ pom/pom08.f
  sed -i s/'    $ (im='.*/'    $ (im=650        ,jm=452            ,kb=21)'/ pom08.c
 fi
+export LD_LIBRARY_PATH=/aracbox/mpi/openmpi/1.5.4/intel_12/lib:/aracbox/lib/netcdf/4.1.2/intel_12/lib:/aracbox/intel/composerxe-2011.5.220/ipp/lib:/aracbox/intel/composerxe-2011.5.220/mkl/lib/intel64:/aracbox/intel/composerxe-2011.5.220/tbb/lib/intel64/cc4.1.0_libc2.4_kernel2.6.16.21:/aracbox/intel/composerxe-2011.5.220/compiler/lib/intel64
+#/aracbox/Modules/3.2.9/bin/modulecmd bash load intel_poe
+#module load intel_poe
 make clean
 make
 ./pom08.exe > out/pom08.log 

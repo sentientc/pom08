@@ -37,9 +37,11 @@ c          latm(i,j)=0.
 c          longm(i,j)=0.
 c        enddo  
 c      enddo
+c!sc: read grid.nc and using north_e and east_e as long and lat
       call read_grid
       lat=north_e
       long=east_e     
+c!sc: the rest is covered in read_grid
 C  N.B. There are no j=1 or i=1 data in model_grid
 c      do n=1,8; read(11,'(2x)');  enddo
 c      do list=9,156794
@@ -76,20 +78,38 @@ c      enddo
           
       do j=1,jm
         do i=1,im
-          if(lat(i,j).ne.0.) 
-     &    cor(i,j)=4.*pi*sin(lat(i,j)*pi/180.)/86400.
+c!sc:testing
+c          if(lat(i,j).ne.0.) 
+c     &    cor(i,j)=4.*pi*sin(lat(i,j)*pi/180.)/86400.
+c          if(lat(i,j).ne.0.) 
+          cor(i,j)=4.*pi*sin(lat(i,j)*pi/180.)/86400.
+        end do
+      end do
+      dum(1,:)=dum(2,:)
+! calculate areas of "t" and "s" cells
+      do j=1,jm
+        do i=1,im
+          art(i,j)=dx(i,j)*dy(i,j)
+        end do
+      end do
+
+! calculate areas of "u" and "v" cells
+      do j=2,jm
+        do i=2,im
+          aru(i,j)=.25e0*(dx(i,j)+dx(i-1,j))*(dy(i,j)+dy(i-1,j))
+          arv(i,j)=.25e0*(dx(i,j)+dx(i,j-1))*(dy(i,j)+dy(i,j-1))
         end do
       end do
 C
-      do i=1,im
-        h(i,1)=h(i,2)
-        h(i,jm)=1.                 
-      enddo
-      do j=1,jm
-        h(1,j)=h(2,j)
-        h(im,j)=h(im-1,j)
-      enddo
-      call areas_masks         ! obtain fsm,dum,dvm
+c      do i=1,im
+c        h(i,1)=h(i,2)
+c        h(i,jm)=1.                 
+c      enddo
+c      do j=1,jm
+c        h(1,j)=h(2,j)
+c        h(im,j)=h(im-1,j)
+c      enddo
+c      call areas_masks         ! obtain fsm,dum,dvm
 C
 C     Adjust bottom topography so that cell to cell variations
 C     in h do not exceed parameter slmax:
@@ -135,30 +155,39 @@ c      dy(i,2)=dy(i,3)
 c      dy(i,1)=dy(i,2)
 c      enddo
 
-      call areas_masks      ! obtain cell areas
+c      call areas_masks      ! obtain cell areas
 C     Set initial conditions:
 C
+c!sc:vel is used for ub
+      vel=0.2e0 ! current velocity
 
       do k=1,kbm1
+!sc:add dz and dzz calculation
+        dz(k)=z(k)-z(k+1)
+        dzz(k)=zz(k)-zz(k+1)
         do j=1,jm
           do i=1,im
             tb(i,j,k)=5.e0+15.e0*exp(zz(k)*h(i,j)/1000.e0)-tbias
             sb(i,j,k)=35.e0-sbias
             tclim(i,j,k)=tb(i,j,k)
             sclim(i,j,k)=sb(i,j,k)
-            ub(i,j,k)=vel*dum(i,j)
+!            ub(i,j,k)=vel*dum(i,j)
           end do
         end do
       end do
+c!sc: added according to mpipom read grid
+      dz(kb) = dz(kb-1) !=0. !lyo:20110202 =0 is dangerous but checked
+      dzz(kb)=dzz(kb-1) !=0. !thro' code - and found to be ok.
 C
 C     Initialise uab and vab as desired
 C     (NOTE that these have already been initialised to zero in the
 C     main program):
-      vel=0.0
+c!sc:vel was used before this
+c      vel=0.0
 C
       do j=1,jm
         do i=1,im
-          uab(i,j)=vel*dum(i,j)
+!          uab(i,j)=vel*dum(i,j)
         end do
       end do
 C
@@ -210,11 +239,13 @@ C
       do j=2,jmm1
         uabw(j)=uab(2,j)
         uabe(j)=uab(imm1,j)
+
+c!sc:turn on according mpipom setting
 C
 C     Set geostrophically conditioned elevations at the boundaries:
 C
-c       ele(j)=ele(j-1)-cor(imm1,j)*uab(imm1,j)/grav*dy(imm1,j-1)
-c       elw(j)=elw(j-1)-cor(2,j)*uab(2,j)/grav*dy(2,j-1)
+       ele(j)=ele(j-1)-cor(imm1,j)*uab(imm1,j)/grav*dy(imm1,j-1)
+       elw(j)=elw(j-1)-cor(2,j)*uab(2,j)/grav*dy(2,j-1)
       end do
 C
 C     Adjust boundary elevations so that they are zero in the middle
