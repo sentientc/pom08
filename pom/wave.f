@@ -239,7 +239,11 @@ C
             kth(i,j,m)=sigth(i,j,m)**2/grav
             kthD(i,j,m)=kth(i,j,m)*d(i,j)
 C  Set up intitial enb, en, enf
-            Hs(i,j)=0.25  
+            Hs(i,j)=0.25
+c!sc: change hs on land to 0
+            if (fsm(i,j).eq.1)then
+             Hs(i,j)=0.
+            end if  
             enb(i,j,m)=grav*(Hs(i,j)/4.)**2
      &                *fsprm(beta,m,mm,tht_wnd(i,j),thetam(m))
             enb(i,j,m)=max(.0001,enb(i,j,m))*fsm(i,j)
@@ -463,7 +467,7 @@ C         Calculate Hm and qdis for later use in depth-induced breaking
             fb=8.0*ent(i,j)/grav/Hm(i,j)**2
 c           fb=min(fb,1.0)     ! necessary ?
 c!sc:testing limiting qdis 
-            if(abs((qdis(i,j)-1)/fb).le.40.) then
+c            if(abs((qdis(i,j)-1)/fb).le.40.) then
             
             qdis(i,j)=exp((qdis(i,j)-1)/fb)
 C
@@ -491,7 +495,7 @@ C induced breaking a la Battjes and Janssen 1978.
              enf(i,j,m)=enf(i,j,m)-(bdis1(i,j,m)+bdis2(i,j,m))*dtw2
              enf(i,j,m)=max(.0001,enf(i,j,m))*fsm(i,j)
            enddo
-           endif
+c           endif
 c!sc:testing limiting qdis 
 C
          endif
@@ -931,7 +935,9 @@ C----------------------------------------------------------------
 C  Solve for F1, F2, F3, F4
 C----------------------------------------------------------------
       m=kpD/0.2+1
-      if (m.lt.16) then
+c      if (m.lt.16) then
+c!sc:m can be less than 1
+      if (m.lt.16.and.m.gt.0) then
 C Interpolate w.r.t. kpD =< 3. (0 < m< 17)
         do n=1,ne
           F1i(n)=F1d(m,n)+(F1d(m+1,n)-F1d(m,n))*(kpD-kpDd(m))/0.2
@@ -961,7 +967,9 @@ C e.g., F1(kpD, z) = (kpD/100)*F1(100, kpD*z/100)
           F3(k)=0.
           F4(k)=0.
           n=1-z(k)*kpD/.1
-          if(n.lt.ne) then     !asumptotes for kpD > 3 
+c          if(n.lt.ne) then     !asumptotes for kpD > 3 
+c!sc:n can be less than 1
+          if(n.lt.ne.and.n.gt.0) then
             F1(k)=F1d(17,n)+(F1d(17,n+1)-F1d(17,n))/.001
      &              *(-z(k)*kpD/100.+zetf(n))
             F2(k)=F1(k)
@@ -970,6 +978,8 @@ C e.g., F1(kpD, z) = (kpD/100)*F1(100, kpD*z/100)
             F3(k)=F3(k)*kpD*0.01
             F4(k)=F4d(17,n)+(F4d(17,n+1)-F4d(17,n))/.001
      &              *(-z(k)*kpD/100.+zetf(n))
+          else if(n.le.0) then
+            write(*,*)'xxx_wave_specavs',n,z(k),kpD
           endif  
         enddo
       endif
@@ -985,7 +995,9 @@ C       averaged. Fcg and Fct are functions of kpD.
        implicit none
        integer k
        real kpD,kpDd(17),Fcg,Fct
-       real Fcgd(17),Fctd(17),c_cp(17),dum(17)
+       real Fcgd(17),Fctd(17),c_cp(17)
+c!sc:dum may conflict with common variable 
+c, dum(17)
        data kpDd/
      &    0.0,   0.2,   0.4,   0.6,   0.8,   1.0,   1.2,   1.4,   1.6,
      &    1.8,   2.0,   2.2,   2.4,   2.6,   2.8,   3.0, 100.0/
@@ -995,19 +1007,26 @@ C       averaged. Fcg and Fct are functions of kpD.
        data Fcgd/
      &  1.000, 0.984, 0.928, 0.834, 0.756, 0.689, 0.635, 0.592, 0.560,
      &  0.535, 0.516, 0.502, 0.491, 0.483, 0.477, 0.472, 0.472/
-       data dum/
-     &  1.000, 0.987, 0.950, 0.897, 0.837, 0.776, 0.720, 0.671, 0.631,
-     &  0.598, 0.573, 0.554, 0.539, 0.529, 0.521, 0.515, 0.500/
+c!sc:dum may conflict with common variable 
+c       data dum/
+c     &  1.000, 0.987, 0.950, 0.897, 0.837, 0.776, 0.720, 0.671, 0.631,
+c     &  0.598, 0.573, 0.554, 0.539, 0.529, 0.521, 0.515, 0.500/
        data Fctd/
      &  1.000, 0.984, 0.954, 0.931, 0.892, 0.858, 0.830, 0.809, 0.795,
      &  0.787, 0.784, 0.786, 0.791, 0.801, 0.814, 0.829, 0.829/
 
         k=kpD/0.2+1
-        if(kpD.lt.1) call printall
-      if (k.lt.16) then
+c!sc: too many output
+c        if(kpD.lt.1) call printall
+c!sc: k anomaly
+c      if (k.lt.16) then
+      if (k.lt.16.and.k.gt.0) then
         Fcg=Fcgd(k)+(Fcgd(k+1)-Fcgd(k))*(kpD-kpDd(k))/0.2
         Fct=Fctd(k)+(Fctd(k+1)-Fctd(k))*(kpD-kpDd(k))/0.2
       else
+        if(k.le.0) then
+          write(*,*)'xxx_wave_speeds',k,kpD
+        endif
         k=16
         Fcg=Fcgd(k)+(Fcgd(k+1)-Fcgd(k))*(kpD-kpDd(k))/97.
         Fct=Fctd(k)+(Fctd(k+1)-Fctd(k))*(kpD-kpDd(k))/97.
@@ -1110,9 +1129,9 @@ C
       real fb(im,jm,mm),f(im,jm,mm),ff(im,jm,mm)
       real mol,abs_1,abs_2
       real udx,u2dt,vdy,v2dt,wdz,w2dt 
+      value_min=1.e-9; epsilon=1.e-14; sw=1.0
 c!sc:testing larger value min
-c      value_min=1.e-9; epsilon=1.e-14; sw=1.0
-      value_min=1.e-3; epsilon=1.e-14; sw=1.0
+c      value_min=1.e-3; epsilon=1.e-14; sw=1.0
 C
       do m=1,mm
         do j=1,jm

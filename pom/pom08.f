@@ -159,7 +159,6 @@ C *                59 Temple Place - Suite 330, Boston, MA 02111, USA. *
 C *                                                                    *
 C **********************************************************************
 C
-      use module_time
 
       implicit none
 C
@@ -176,6 +175,8 @@ C
       real vamax,faci3,nflag3
       real z0b
       real tatm,satm
+c!sc: new cd method
+      real cda
       integer iend,iext,ispadv,isplit 
       integer iswtch
       integer imax,jmax,iintmax,iextmax
@@ -183,7 +184,6 @@ C
       integer narr,itime1,idtwind
       logical lramp
       character*120 netcdf_file
-      type(date) ::  mtime
       dimension u10xb(im,jm),u10yb(im,jm),u10xf(im,jm),u10yf(im,jm)
       dimension narr(im,jm)
 C
@@ -246,7 +246,7 @@ C        3        3-D calculation (bottom stress calculated in profu,v)
 C
 C        4        3-D calculation with t and s held fixed
 C
-      mode=3
+      mode=0
 C                       !WAVE
 C     modew      Options for the surface wave portion of the model
 C                
@@ -293,7 +293,7 @@ C-----------------------------------------------------------------------
 C
 C     External (2-D) time step (secs.) = dte according to CFL:
 C
-      dte=0.01         
+      dte=2.
 C
 C     Internal (3-D) time step = dti              
 C
@@ -338,7 +338,8 @@ C
 C
 C-----------------------------------------------------------------------
 C
-      swtch=1000.e0      ! Time to switch from prtd1 to prtd2 
+c      swtch=1000.e0      ! Time to switch from prtd1 to prtd2 
+      swtch=0.e0      ! Time to switch from prtd1 to prtd2 
 C
 C-----------------------------------------------------------------------
 C
@@ -655,6 +656,8 @@ C
           swrad(i,j)=0.e0
           drx2d(i,j)=0.e0
           dry2d(i,j)=0.e0
+          u10x(i,j)=0.e0
+          u10y(i,j)=0.e0
         end do
       end do
 C
@@ -693,15 +696,6 @@ c       call gfdex_nwatl  !lyo:_20090408:glm:call this grid setup routine
       endif
 c!sc:usng pom08's z and zz definition
       call depth
-c!sc: closing boundaries
-      do j=1,jm
-       fsm(im,j)=0.
-       fsm(1,j)=0.
-      end do
-      do i=1,im
-       fsm(i,1)=0.
-       fsm(i,jm)=0.
-      end do
       write(6,'('' cor(im/2,jm/2) ='',e9.2)') cor(im/2,jm/2)
       write(6,'('' hmax  = '',f10.2)') hmax       
 c      call prxy(' h                  ', time,h  ,im,iskp,jm,jskp,1.e0)
@@ -867,8 +861,8 @@ C
 C     call prxy('Undisturbed water depth, h              ',
 C    $          time,h  ,im,iskp,jm,jskp,0.  )
 C
-      call prxy('External (2-D) CFL time step, tps',
-     $          time,tps,im,iskp,jm,jskp,1.e0)
+c      call prxy('External (2-D) CFL time step, tps',
+c     $          time,tps,im,iskp,jm,jskp,1.e0)
 C
 C     Set sections for output:
 C
@@ -955,11 +949,10 @@ C     a value, kl1=7 to 9, is recommended.
 C
 C
 c!sc: read wind
-c         if(iproblem.eq.6) then
-c          mtime=str2date(time_start)+time*86400
-c          call get_wind(mtime)
-c         else
-c         endif
+         if(iproblem.eq.6) then
+          call get_wind
+          u10=sqrt(u10x**2+u10y**2)
+         else
          do j=2,jm-1      
            do i=1,im
              u10x(i,j)= 10.
@@ -969,6 +962,7 @@ c    &                 +dvm(i-1,j)+dvm(i,j))
              u10(i,j)=sqrt(u10x(i,j)**2+u10y(i,j)**2)
            enddo
          enddo         
+         endif
 C
 C--------------------------------------------------------------------
 C     When modew=1, then subroutine wave and supporting subroutines 
@@ -989,6 +983,21 @@ C       are of opposite sign.
               tpx(i,j,k)=tpx0(i,j)*tpzdist(i,j,k)
               tpy(i,j,k)=tpy0(i,j)*tpzdist(i,j,k)
             enddo
+c!sc:testing by filling up wusurf with wind stress
+            if (u10(i,j).ge.11.0) then
+               cda = 0.0012
+            elseif (u10(i,j).ge.19.0) then
+               cda = 0.00049 + 0.000065*u10(i,j)
+            elseif (u10(i,j).ge.100.0) then
+            cda=0.001364+0.0000234*u10(i,j)-2.31579e-7*u10(i,j)**2
+            else
+               cda = 0.00138821   !modify cda = 0.000138821 ---> 0.00138821
+            endif
+           if (sqrt(wusurf(i,j)**2+wvsurf(i,j)**2).le.small) then
+             wusurf(i,j)=-1.22/1025.0*cda*u10(i,j)*u10x(i,j)
+             wvsurf(i,j)=-1.22/1025.0*cda*u10(i,j)*u10y(i,j)
+            endif
+c!sc:testing by filling up wusurf with wind stress
           enddo
         enddo  
 C-------------------------------------------------------------------
@@ -1587,12 +1596,13 @@ C
 C
 C     Select print statements in printall as desired:
 C
-             call printall
+c             call printall
 C
 C
 C     Write netCDF output:
 C
             if(netcdf_file.ne.'nonetcdf') then
+          write(*,*) 'main********netcdf out**********'
           call write_netcdf(netcdf_file,2)                    ! *netCDF*
             endif
 C
@@ -3830,7 +3840,7 @@ C     Define depth:
       hmax=0.0
       do i=1,im
         do j=1,jm
-          h(i,j)=6500.e0*(1.e0-delh
+          h(i,j)=500.e0*(1.e0-delh
      $                 *exp(-((east_c(i,j)
      $                       -east_c((im+1)/2,j))**2
      $                        +(north_c(i,j)
@@ -4012,9 +4022,9 @@ c         call prxy('wvsurf ' , time,wvsurf,im,iskp,jm,jskp,0. )
 c         call prxy('wtsurf ' , time,wtsurf,im,iskp,jm,jskp,0. )
 c         call prxy('wubot  ' , time,wubot ,im,iskp,jm,jskp,0. )
 c         call prxy('wvbot  ' , time,wvbot ,im,iskp,jm,jskp,0. )
-          call prxy(' ua ' , time,ua ,im,iskp,jm,jskp,0. )
-          call prxy(' va ' , time,va ,im,iskp,jm,jskp,0.e0)
-          call prxy('el ', time,el ,im,iskp,jm,jskp,0.e0)
+          call prxy(' ua ', time,ua ,im,iskp,jm,jskp,0. )
+          call prxy(' va ', time,va ,im,iskp,jm,jskp,0.e0)
+          call prxy(' el ', time,el ,im,iskp,jm,jskp,0.e0)
 C
 C     Calculate and print streamfunction:
 C

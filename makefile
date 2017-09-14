@@ -14,13 +14,9 @@ CLEAN = rm
 NETCDFINC = -I/aracbox/lib/netcdf/4.1.2/intel_12/include
 NETCDFLIB = -L/aracbox/lib/netcdf/4.1.2/intel_12/lib
 
-#FFLAGS = -check bounds -warn interface -g -traceback -fpe0 -mcmodel large -shared-intel -fp-model precise -align commons $(NETCDFINC)
-#FFLAGS = -O3 -mcmodel large -shared-intel -fp-model precise -align commons $(NETCDFINC)
 #FFLAGS = -O3 -mcmodel large -shared-intel -fp-model precise -assume byterecl $(NETCDFINC)
 FFLAGS = -check bounds -warn interface -g -traceback -mcmodel large -shared-intel -fp-model precise -assume byterecl $(NETCDFINC)
 
-#LIBS = -check bounds -warn interface -g -traceback -fpe0 -mcmodel large -shared-intel -fp-model precise -align commons $(NETCDFLIB) -lnetcdf -lnetcdff -limf -lm 
-#LIBS = -O3 -mcmodel large -shared-intel -fp-model precise -align commons $(NETCDFLIB) -lnetcdf -lnetcdff -limf -lm 
 #LIBS = -O3 -mcmodel large -shared-intel -fp-model precise -assume byterecl $(NETCDFLIB) -lnetcdf -lnetcdff -limf -lm 
 LIBS = -check bounds -warn interface -g -traceback -mcmodel large -shared-intel -fp-model precise -assume byterecl $(NETCDFLIB) -lnetcdf -lnetcdff -limf -lm 
 #-----------------------------------------------------------------------
@@ -39,6 +35,7 @@ SRCDIR = pom
 #-----------------------------------------------------------------------
 OBJS = pom08_iosub.o    \
        module_time.o    \
+       interp.o         \
        gridgen.o        \
        wave.o           \
        wind.o           \
@@ -74,4 +71,4 @@ $(BIN): $(OBJS)
 # Cleaning target
 #-----------------------------------------------------------------------
 clean:
-	@rm -f *.o *.mod *.il *.exe 
+	@rm -f *.o *.mod *.il *.exe  *genmod.f90

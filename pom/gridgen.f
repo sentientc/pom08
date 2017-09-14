@@ -109,7 +109,7 @@ c      do j=1,jm
 c        h(1,j)=h(2,j)
 c        h(im,j)=h(im-1,j)
 c      enddo
-c      call areas_masks         ! obtain fsm,dum,dvm
+      call areas_masks         ! obtain fsm,dum,dvm
 C
 C     Adjust bottom topography so that cell to cell variations
 C     in h do not exceed parameter slmax:
@@ -159,7 +159,7 @@ c      call areas_masks      ! obtain cell areas
 C     Set initial conditions:
 C
 c!sc:vel is used for ub
-      vel=0.2e0 ! current velocity
+      vel=0.1e0 ! current velocity
 
       do k=1,kbm1
 !sc:add dz and dzz calculation
@@ -171,7 +171,7 @@ c!sc:vel is used for ub
             sb(i,j,k)=35.e0-sbias
             tclim(i,j,k)=tb(i,j,k)
             sclim(i,j,k)=sb(i,j,k)
-!            ub(i,j,k)=vel*dum(i,j)
+            ub(i,j,k)=vel*dum(i,j)
           end do
         end do
       end do
@@ -187,7 +187,7 @@ c      vel=0.0
 C
       do j=1,jm
         do i=1,im
-!          uab(i,j)=vel*dum(i,j)
+          uab(i,j)=vel*dum(i,j)
         end do
       end do
 C

@@ -126,6 +126,7 @@ C
      $  tclim          ,t              ,ub             ,uf             ,
      $  u              ,vb             ,vf             ,v              ,
      $  w              ,wr             ,zflux          ,rclim
+     $ ,wu             ,wv
 !lyo:_20080602:add wr  !lyo:_20081226:add rclim
 C
       common/blk3d/
@@ -138,6 +139,8 @@ C
      $  tclim(im,jm,kb),t(im,jm,kb)    ,ub(im,jm,kb)   ,uf(im,jm,kb)   ,
      $  u(im,jm,kb)    ,vb(im,jm,kb)   ,vf(im,jm,kb)   ,v(im,jm,kb)    ,
      $  w(im,jm,kb)    ,wr(im,jm,kb)   ,zflux(im,jm,kb),rclim(im,jm,kb)
+c!sc:winds for interpolation in time
+     $ ,wu(im,jm,2)   ,wv(im,jm,2)
 !lyo:_20080602:add wr  !lyo:_20081226:add rclim
 C
 C-----------------------------------------------------------------------

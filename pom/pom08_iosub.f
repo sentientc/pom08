@@ -190,8 +190,10 @@ c      integer i,j  !lyo:!wad:!sc:already defined in pom08.c
 C!sc:wave variables out:start
       integer cg_varid,thtav_varid,Hs_varid,ent_varid,sigp_varid
      & ,kthav_varid,tpx0_varid,tpy0_varid,ttx0_varid,tty0_varid
+     & ,wu0_varid,wv0_varid
 C!sc:wave variables out:end
 C
+      real rt
       save dum_varid,dvm_varid
       save dx_varid,dy_varid
       save east_c_varid,east_e_varid,east_u_varid,east_v_varid
@@ -216,6 +218,7 @@ C
 C!sc:wave variables out:start
       save cg_varid,thtav_varid,Hs_varid,ent_varid,sigp_varid
      & ,kthav_varid,tpx0_varid,tpy0_varid,ttx0_varid,tty0_varid
+     & ,wu0_varid,wv0_varid
 C!sc:wave variables out:end
 C
 C***********************************************************************
@@ -294,7 +297,7 @@ C
         vdims(1)=time_dimid
 C
         call def_var_netcdf(ncid,'time',1,vdims,time_varid,
-     $                      4,'time',37,'days since '//time_start,
+     $                      4,'time',30,'days since '//time_start,
      $                      1,' ',.false.,
      $                      nf_float,nf_noerr)
 C
@@ -496,6 +499,14 @@ C!sc:wave variables out:start
      $          25,'turbulence surface stress',9,'(m+2 s-2)',
      $                      14,'east_e north_e',.true.,
      $                      nf_float,nf_noerr)
+        call def_var_netcdf(ncid,'wu',3,vdims,wu0_varid,
+     $          22,'u direction wind speed',7,'(m s-1)',
+     $                      14,'east_e north_e',.true.,
+     $                      nf_float,nf_noerr)
+        call def_var_netcdf(ncid,'wv',3,vdims,wv0_varid,
+     $          22,'v direction wind speed',7,'(m s-1)',
+     $                      14,'east_e north_e',.true.,
+     $                      nf_float,nf_noerr)
 C!sc:wave variables out:end
 C
         vdims(1)=x_dimid
@@ -650,7 +661,7 @@ C
         start(1)=iout
         count(1)=1
 C
-        status=nf_put_vara_real(ncid,time_varid,start,count,time)
+        status=nf_put_vara_real(ncid,time_varid,start(1),count(1),time)
         call handle_netcdf_error('nf_put_vara_real    ',
      $                           status,nf_noerr)
 C
@@ -662,16 +673,16 @@ C
         count(3)=1
 C
       write(6,*)'nc put uab'
-        status=nf_put_vara_real(ncid,uab_varid,start,count,uab)
-        call handle_netcdf_error('nf_put_vara_real    ',
+       status=nf_put_vara_real(ncid,uab_varid,start(1:3),count(1:3),uab)
+       call handle_netcdf_error('nf_put_vara_real    ',
      $                           status,nf_noerr)
 C
-        status=nf_put_vara_real(ncid,vab_varid,start,count,vab)
-        call handle_netcdf_error('nf_put_vara_real    ',
+       status=nf_put_vara_real(ncid,vab_varid,start(1:3),count(1:3),vab)
+       call handle_netcdf_error('nf_put_vara_real    ',
      $                           status,nf_noerr)
 C
-        status=nf_put_vara_real(ncid,elb_varid,start,count,elb)
-        call handle_netcdf_error('nf_put_vara_real    ',
+       status=nf_put_vara_real(ncid,elb_varid,start(1:3),count(1:3),elb)
+       call handle_netcdf_error('nf_put_vara_real    ',
      $                           status,nf_noerr)
 C
 !lyo:_20091229:!pom08_2d.n:tide_only for nwatl:
@@ -744,6 +755,12 @@ C!sc:wave variables out:start
         call handle_netcdf_error('nf_put_vara_real    ',
      $                           status,nf_noerr)
       write(6,*)'nc put wave end'
+        status=nf_put_vara_real(ncid,wu0_varid,start,count,u10x)
+        call handle_netcdf_error('nf_put_vara_real    ',
+     $                           status,nf_noerr)
+        status=nf_put_vara_real(ncid,wv0_varid,start,count,u10y)
+        call handle_netcdf_error('nf_put_vara_real    ',
+     $                           status,nf_noerr)
 C!sc:wave variables out:end
 c
 !lyo:_20091229:!pom08_2d.n:tide_only for nwatl:
@@ -979,50 +996,82 @@ C
       return
       end
 !_______________________________________________________________________
-      subroutine read_wind(wfile,ti,wu,wv)
+      subroutine read_wind(wfile,ti,wu2,wv2,tt)
       implicit none
       include 'pom08.c'
       include '/aracbox/lib/netcdf/4.1.2/intel_12/include/netcdf.inc'        !sc:netcdf.inc on ATOP cluster 
-      character*16 wfile 
-      integer wu_varid,wv_varid
+      character*62 wfile 
+      integer wu_varid,wv_varid,lon_varid,lat_varid,t_varid
       integer ncid,status
       integer vdims(3)
       integer start(3),edge(3)
       integer :: ti
-      real :: wu(im,jm),wv(im,jm)
+      real :: wu2(im,jm),wv2(im,jm)
+      real :: wu1(1439,602),wv1(1439,602),lon1(1439),lat1(602),tt
       logical :: lexist
-      inquire(file='in/'//trim(wfile),
+      inquire(file='in/wind/'//trim(wfile),
      $  exist=lexist)
 ! open netcdf file
       if (lexist)then
-       status=nf_open('in/'//trim(wfile),nf_nowrite,ncid)
+       status=nf_open('in/wind/'//trim(wfile),nf_nowrite,ncid)
        call handle_netcdf_error('open'//wfile,
      $                          status,nf_noerr)
 ! get variables
+       status=nf_inq_varid(ncid,'time',t_varid)
+       call handle_netcdf_error('nf_inq_varid: time  '
+     $                          ,status,nf_noerr)
        status=nf_inq_varid(ncid,'uwsrf',wu_varid)
        call handle_netcdf_error('nf_inq_varid: uwsrf '
      $                          ,status,nf_noerr)
-       status=nf_inq_varid(ncid,'vwsurf',wv_varid)
+       status=nf_inq_varid(ncid,'vwsrf',wv_varid)
        call handle_netcdf_error('nf_inq_varid: vwsrf '
+     $                          ,status,nf_noerr)
+       status=nf_inq_varid(ncid,'alon',lon_varid)
+       call handle_netcdf_error('nf_inq_varid: alon  '
+     $                          ,status,nf_noerr)
+       status=nf_inq_varid(ncid,'alat',lat_varid)
+       call handle_netcdf_error('nf_inq_varid: alat  '
      $                          ,status,nf_noerr)
 ! get data
        start(1)=1
        start(2)=1
        start(3)=ti
-       edge(1)=im
-       edge(2)=jm
+       edge(1)=1439
+       edge(2)=602
        edge(3)=1
+       status=nf_get_vara_real(ncid,t_varid,start(3),edge(3),
+     $                               tt)
+       call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
        status=nf_get_vara_real(ncid,wu_varid,start,edge,
-     $                               wu)
+     $                               wu1)
        call handle_netcdf_error('nf_get_vara_real_all',
      $                          status,nf_noerr)
        status=nf_get_vara_real(ncid,wv_varid,start,edge,
-     $                               wv)
+     $                               wv1)
+       call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+       start(1)=1
+       start(2)=1
+       edge(1)=1439
+       edge(2)=1
+       status=nf_get_vara_real(ncid,lon_varid,start(1:2),edge(1:2),
+     $                               lon1)
+       call handle_netcdf_error('nf_get_vara_real_all',
+     $                          status,nf_noerr)
+       start(1)=1
+       start(2)=1
+       edge(1)=1
+       edge(2)=602
+       status=nf_get_vara_real(ncid,lat_varid,start(1:2),edge(1:2),
+     $                               lat1)
        call handle_netcdf_error('nf_get_vara_real_all',
      $                          status,nf_noerr)
 ! close file:
        status=nf_close(ncid)
        call handle_netcdf_error('nf_close: grid      ',status,nf_noerr)
+       call interp_wind(wu2,wv2,lon1,lat1,wu1,wv1)
+
       endif
       return
       end
